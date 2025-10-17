@@ -32,12 +32,17 @@ dependencies = [
     "python-dotenv>=0.15",
     "aiofiles>=0.6",
     "aiohttp>=3.6",
-    "faster-whisper==1.1.1",
+    "faster-whisper>1.1.1",
     "imageio-ffmpeg>=0.4.0",
     "rich>=10.0",
     "watchdog>=2.0",
     "asyncio>=3.4",
     "nest-asyncio>=1.2",
+    "hf-transfer>=0.1.9",
+    "bumpversion>=0.6.0",
+    "jupyter>=1.1.1",
+    "ipython>=8.18.1",
+    "ipykernel>=6.30.1",
 ]
 keywords = ["education", "video", "transcription", "canvas", "brightspace", "whisper", "lecture"]
 
@@ -47,18 +52,18 @@ gcloud = [
     "google-cloud-storage>=2.7.0",
 ]
 jupyter = [
-    "IPython==8.37.0",
-    "ipywidgets==8.1.7",
-    "jupyter==1.1.1",
-    "notebook==7.4.3",
+    "IPython",
+    "ipywidgets",
+    "jupyter",
+    "notebook",
 ]
 all = [
     "google-cloud-speech>=2.16.0",
     "google-cloud-storage>=2.7.0",
-    "IPython==8.37.0",
-    "ipywidgets==8.1.7",
-    "jupyter==1.1.1",
-    "notebook==7.4.3",
+    "IPython",
+    "ipywidgets",
+    "jupyter",
+    "notebook",
 ]
 
 [project.scripts]

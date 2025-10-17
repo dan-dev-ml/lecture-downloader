@@ -1030,7 +1030,7 @@ class GoogleCloudTranscriber:
 class WhisperTranscriber:
     """Faster-whisper local transcriber."""
     
-    def __init__(self, model_size_or_path: str = "base", device: str = "auto", compute_type: str = "auto"):
+    def __init__(self, model_size_or_path: str = "base.en", device: str = "auto", compute_type: str = "auto"):
         if not FASTER_WHISPER_AVAILABLE:
             raise ImportError("faster-whisper not available. Install with: pip install faster-whisper")
         
@@ -1042,11 +1042,16 @@ class WhisperTranscriber:
     def _get_model(self):
         """Get or initialize the Whisper model (cached after first use)."""
         if self._model is None:
-            self._model = WhisperModel(
-                self.model_size_or_path, 
-                device=self.device, 
-                compute_type=self.compute_type
-            )
+            kwargs = {
+                "device": self.device,
+                "compute_type": self.compute_type,
+            }
+            download_root = os.environ.get("WHISPER_DOWNLOAD_ROOT")
+            if download_root:
+                os.makedirs(download_root, exist_ok=True)
+                kwargs["download_root"] = download_root
+
+            self._model = WhisperModel(self.model_size_or_path, **kwargs)
         return self._model
 
     async def transcribe_audio_whisper(self, audio_path: str, language: str = "en", verbose: bool = False, progress_callback=None) -> List[Tuple[str, float, float]]:
@@ -1569,12 +1574,12 @@ def transcribe_videos(
     base_dir: str = ".",
     language: str = "en-US", # Language code for transcription (en-US for GCloud, en for Whisper)
     method: str = "auto", # "auto", "google", "whisper"
-    max_workers: int = 3, 
+    max_workers: int = 8, 
     inject_subtitles: bool = False,
     save_txt: bool = True, # Save transcript TXT files
     save_srt: bool = False, # Save subtitle SRT files
     verbose: bool = False,
-    model_size_or_path: str = "base", # Whisper model size or path to custom model
+    model_size_or_path: str = "base.en", # Whisper model size or path to custom model
     # Legacy support (auto-detected)
     input_path: str = None,
     output_dir: str = None

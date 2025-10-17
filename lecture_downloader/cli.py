@@ -115,6 +115,7 @@ def merge(ctx, base_dir, input_dir, output_dir):
 @click.argument('path', required=False)
 @click.option('--base-dir', '-b', default='.', help='Base project directory (auto-detects input, outputs to base-dir/transcripts)')
 @click.option('--method', '-m', default='auto', type=click.Choice(['auto', 'gcloud', 'whisper']), help='Transcription method')
+@click.option('--model', default='base', help='Whisper model size (tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.en, distil-medium.en, large-v1, large-v2, large-v3, large, distil-large-v2, distil-large-v3) or path to a custom model.')
 @click.option('--language', '-lang', default='en-US', help='Language code')
 @click.option('--max-workers', '-w', default=3, type=int, help='Concurrent workers')
 @click.option('--no-inject', is_flag=True, help='Skip subtitle injection')
@@ -127,7 +128,7 @@ def merge(ctx, base_dir, input_dir, output_dir):
 @click.option('--input-path', '-i', default=None, help='Legacy: Video file or directory (auto-detects direct vs smart mode)')
 @click.option('--output-dir', '-o', default=None, help='Legacy: Output directory (if provided with input-path, uses direct paths mode)')
 @click.pass_context
-def transcribe(ctx, path, base_dir, method, language, max_workers, no_inject, save_txt, save_srt, resume, watch, recursive, input_path, output_dir):
+def transcribe(ctx, path, base_dir, method, model, language, max_workers, no_inject, save_txt, save_srt, resume, watch, recursive, input_path, output_dir):
     """Transcribe videos using Google Cloud or Whisper.
     
     PATH can be a video file or directory. If not provided, uses --base-dir (or current directory).
@@ -149,6 +150,7 @@ def transcribe(ctx, path, base_dir, method, language, max_workers, no_inject, sa
             base_dir=effective_base_dir,
             language=language,
             method=method,
+            model_size_or_path=model,
             max_workers=max_workers,
             inject_subtitles=not no_inject,
             save_txt=save_txt,
@@ -196,6 +198,7 @@ def transcribe(ctx, path, base_dir, method, language, max_workers, no_inject, sa
 @click.option('--max-download-workers', default=5, type=int, help='Concurrent downloads')
 @click.option('--max-transcribe-workers', default=3, type=int, help='Concurrent transcriptions')
 @click.option('--method', '-m', default='auto', type=click.Choice(['auto', 'gcloud', 'whisper']), help='Transcription method')
+@click.option('--model', default='base', help='Whisper model size (tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.en, distil-medium.en, large-v1, large-v2, large-v3, large, distil-large-v2, distil-large-v3) or path to a custom model.')
 @click.option('--language', '-lang', default='en-US', help='Language code')
 @click.option('--download-only', is_flag=True, help='Only download')
 @click.option('--merge-only', is_flag=True, help='Only merge')
@@ -203,7 +206,7 @@ def transcribe(ctx, path, base_dir, method, language, max_workers, no_inject, sa
 @click.option('--no-inject', is_flag=True, help='Skip subtitle injection')
 @click.pass_context
 def pipeline(ctx, links, titles, output_dir, max_download_workers, max_transcribe_workers, 
-             method, language, download_only, merge_only, transcribe_only, no_inject):
+             method, model, language, download_only, merge_only, transcribe_only, no_inject):
     """Run the complete pipeline: download -> merge -> transcribe."""
     verbose = ctx.obj['verbose']
     
@@ -223,6 +226,7 @@ def pipeline(ctx, links, titles, output_dir, max_download_workers, max_transcrib
             max_download_workers=max_download_workers,
             max_transcribe_workers=max_transcribe_workers,
             transcription_method=method,
+            model_size_or_path=model,
             language=language,
             inject_subtitles=not no_inject,
             download_only=download_only,
