@@ -55,6 +55,18 @@ lecture-downloader transcribe lectures/ \
 
 # Transcribe without injecting subtitles
 lecture-downloader transcribe video.mp4 --no-inject
+
+```
+
+## Shell Completion
+```bash
+# Show all shell instructions
+lecture-downloader completion
+
+# Show instructions for specific shell
+lecture-downloader completion bash
+lecture-downloader completion zsh
+lecture-downloader completion fish
 ```
 
 ## Requirements

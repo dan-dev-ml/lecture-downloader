@@ -6,6 +6,13 @@ CLI interface for lecture_downloader package.
 import os
 import click
 from .processor import LectureProcessor
+from .completion import (
+    print_completion_instructions,
+    complete_video_files,
+    complete_directories,
+    complete_links_files,
+    complete_json_files,
+)
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
@@ -18,13 +25,13 @@ def cli(ctx, verbose):
 
 
 @cli.command()
-@click.option('--links', '-l', required=True, help='Path to links file or single URL')
-@click.option('--titles', '-t', default=None, help='Path to titles JSON file')
-@click.option('--base-dir', '-b', default='.', help='Base project directory (downloads to base-dir/lecture-downloads)')
+@click.option('--links', '-l', required=True, shell_complete=complete_links_files, help='Path to links file or single URL')
+@click.option('--titles', '-t', default=None, shell_complete=complete_json_files, help='Path to titles JSON file')
+@click.option('--base-dir', '-b', default='.', shell_complete=complete_directories, help='Base project directory (downloads to base-dir/lecture-downloads)')
 @click.option('--max-workers', '-w', default=5, type=int, help='Concurrent downloads')
 @click.option('--no-custom-titles', is_flag=True, help='Do not use custom titles')
 # Legacy options (auto-detected)
-@click.option('--output-dir', '-o', default=None, help='Legacy: Output directory (if provided, uses direct paths mode)')
+@click.option('--output-dir', '-o', default=None, shell_complete=complete_directories, help='Legacy: Output directory (if provided, uses direct paths mode)')
 @click.pass_context
 def download(ctx, links, titles, base_dir, max_workers, no_custom_titles, output_dir):
     """Download lectures from URLs."""
@@ -67,10 +74,10 @@ def download(ctx, links, titles, base_dir, max_workers, no_custom_titles, output
 
 
 @cli.command()
-@click.option('--base-dir', '-b', default='.', help='Base project directory (auto-detects input, outputs to base-dir/merged-lectures)')
+@click.option('--base-dir', '-b', default='.', shell_complete=complete_directories, help='Base project directory (auto-detects input, outputs to base-dir/merged-lectures)')
 # Legacy options (auto-detected)
-@click.option('--input-dir', '-i', default=None, help='Legacy: Input directory (auto-detects direct vs smart mode)')
-@click.option('--output-dir', '-o', default=None, help='Legacy: Output directory (if provided with input-dir, uses direct paths mode)')
+@click.option('--input-dir', '-i', default=None, shell_complete=complete_directories, help='Legacy: Input directory (auto-detects direct vs smart mode)')
+@click.option('--output-dir', '-o', default=None, shell_complete=complete_directories, help='Legacy: Output directory (if provided with input-dir, uses direct paths mode)')
 @click.pass_context
 def merge(ctx, base_dir, input_dir, output_dir):
     """Merge videos by module with chapter markers."""
@@ -112,8 +119,8 @@ def merge(ctx, base_dir, input_dir, output_dir):
 
 
 @cli.command()
-@click.argument('path', required=False)
-@click.option('--base-dir', '-b', default='.', help='Base project directory (auto-detects input, outputs to base-dir/transcripts)')
+@click.argument('path', required=False, shell_complete=complete_video_files)
+@click.option('--base-dir', '-b', default='.', shell_complete=complete_directories, help='Base project directory (auto-detects input, outputs to base-dir/transcripts)')
 @click.option('--method', '-m', default='auto', type=click.Choice(['auto', 'gcloud', 'whisper']), help='Transcription method')
 @click.option('--model', default='base', help='Whisper model size (tiny, tiny.en, base, base.en, small, small.en, distil-small.en, medium, medium.en, distil-medium.en, large-v1, large-v2, large-v3, large, distil-large-v2, distil-large-v3) or path to a custom model.')
 @click.option('--language', '-lang', default='en-US', help='Language code')
@@ -125,8 +132,8 @@ def merge(ctx, base_dir, input_dir, output_dir):
 @click.option('--watch', is_flag=True, help='Watch directory for new MP4 files and auto-transcribe')
 @click.option('--recursive', '-r', is_flag=True, help='Find MP4 files in subdirectories recursively')
 # Legacy options (auto-detected)
-@click.option('--input-path', '-i', default=None, help='Legacy: Video file or directory (auto-detects direct vs smart mode)')
-@click.option('--output-dir', '-o', default=None, help='Legacy: Output directory (if provided with input-path, uses direct paths mode)')
+@click.option('--input-path', '-i', default=None, shell_complete=complete_video_files, help='Legacy: Video file or directory (auto-detects direct vs smart mode)')
+@click.option('--output-dir', '-o', default=None, shell_complete=complete_directories, help='Legacy: Output directory (if provided with input-path, uses direct paths mode)')
 @click.pass_context
 def transcribe(ctx, path, base_dir, method, model, language, max_workers, no_inject, save_txt, save_srt, resume, watch, recursive, input_path, output_dir):
     """Transcribe videos using Google Cloud or Whisper.
@@ -192,9 +199,39 @@ def transcribe(ctx, path, base_dir, method, model, language, max_workers, no_inj
 
 
 @cli.command()
-@click.option('--links', '-l', required=True, help='Path to links file')
-@click.option('--titles', '-t', default=None, help='Path to titles JSON file')
-@click.option('--output-dir', '-o', default='lecture_processing', help='Base output directory')
+@click.argument('shell', required=False, type=click.Choice(['bash', 'zsh', 'fish', 'powershell'], case_sensitive=False))
+@click.option('--install', is_flag=True, help='Install completion for current shell')
+def completion(shell, install):
+    """Show or install shell completion.
+
+    Examples:
+        lecture-downloader completion bash
+        lecture-downloader completion --install
+        eval "$(_LECTURE_DOWNLOADER_COMPLETE=bash_source lecture-downloader)"
+    """
+    if install:
+        # Auto-detect shell from environment
+        import subprocess
+        try:
+            detected_shell = os.path.basename(os.environ.get('SHELL', 'bash'))
+            if detected_shell not in ['bash', 'zsh', 'fish', 'powershell']:
+                detected_shell = 'bash'
+            shell = detected_shell
+        except Exception:
+            shell = 'bash'
+
+    if shell:
+        from .completion import get_completion_script
+        click.echo(get_completion_script(shell))
+    else:
+        # Show all completion instructions
+        print_completion_instructions()
+
+
+@cli.command()
+@click.option('--links', '-l', required=True, shell_complete=complete_links_files, help='Path to links file')
+@click.option('--titles', '-t', default=None, shell_complete=complete_json_files, help='Path to titles JSON file')
+@click.option('--output-dir', '-o', default='lecture_processing', shell_complete=complete_directories, help='Base output directory')
 @click.option('--max-download-workers', default=5, type=int, help='Concurrent downloads')
 @click.option('--max-transcribe-workers', default=3, type=int, help='Concurrent transcriptions')
 @click.option('--method', '-m', default='auto', type=click.Choice(['auto', 'gcloud', 'whisper']), help='Transcription method')
@@ -205,7 +242,7 @@ def transcribe(ctx, path, base_dir, method, model, language, max_workers, no_inj
 @click.option('--transcribe-only', is_flag=True, help='Only transcribe')
 @click.option('--no-inject', is_flag=True, help='Skip subtitle injection')
 @click.pass_context
-def pipeline(ctx, links, titles, output_dir, max_download_workers, max_transcribe_workers, 
+def pipeline(ctx, links, titles, output_dir, max_download_workers, max_transcribe_workers,
              method, model, language, download_only, merge_only, transcribe_only, no_inject):
     """Run the complete pipeline: download -> merge -> transcribe."""
     verbose = ctx.obj['verbose']
